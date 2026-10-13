@@ -1,0 +1,1 @@
+# meu-addon-stremio
