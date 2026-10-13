@@ -14,16 +14,16 @@ const AGENT_NAME = 'meuaddon';
 // ==========================================
 async function obterTituloEmPortugues(imdbId, type) {
     try {
-        const url = `https://api.themoviedb.org/3/find/${imdbId}?api_key=${TMDB_API_KEY}&external_source=imdb_id&language=pt-BR`;
+        const url = 'https://api.themoviedb.org/3/find/' + imdbId + '?api_key=' + TMDB_API_KEY + '&external_source=imdb_id&language=pt-BR';
         const res = await axios.get(url);
 
-        if (type === 'movie' && res.data.movie_results?.length > 0) {
+        if (type === 'movie' && res.data.movie_results && res.data.movie_results.length > 0) {
             const filme = res.data.movie_results[0];
             return {
                 titulo: filme.title,
                 ano: filme.release_date ? filme.release_date.split('-')[0] : ''
             };
-        } else if (type === 'series' && res.data.tv_results?.length > 0) {
+        } else if (type === 'series' && res.data.tv_results && res.data.tv_results.length > 0) {
             const serie = res.data.tv_results[0];
             return {
                 titulo: serie.name,
@@ -42,8 +42,8 @@ async function obterTituloEmPortugues(imdbId, type) {
 async function buscarFontesDubladas(titulo, ano) {
     const resultados = [];
     try {
-        const termoBusca = encodeURIComponent(`${titulo} ${ano} Dublado`);
-        const buscaUrl = `https://comandotorrents.vet/?s=${termoBusca}`;
+        const termoBusca = encodeURIComponent(titulo + ' ' + ano + ' Dublado');
+        const buscaUrl = 'https://comandotorrents.vet/?s=' + termoBusca;
         
         const buscaRes = await axios.get(buscaUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
@@ -62,7 +62,7 @@ async function buscarFontesDubladas(titulo, ano) {
 
             $post('a[href^="magnet:"]').each((i, el) => {
                 const magnet = $post(el).attr('href');
-                const textoBotao = $post(el).text().trim() \vert{}\vert{}$post(el).parent().text().trim();
+                const textoBotao = $post(el).text().trim() || $post(el).parent().text().trim();
 
                 const isDublado = /dublado|dual/i.test(textoBotao) || /dublado|dual/i.test(magnet);
 
@@ -89,37 +89,37 @@ async function buscarFontesDubladas(titulo, ano) {
 // ==========================================
 async function resolverComAllDebrid(magnet) {
     try {
-        const uploadUrl = `https://api.alldebrid.com/v4/magnet/upload?agent=${AGENT_NAME}&apikey=${ALLDEBRID_API_KEY}`;
+        const uploadUrl = 'https://api.alldebrid.com/v4/magnet/upload?agent=' + AGENT_NAME + '&apikey=' + ALLDEBRID_API_KEY;
         const formData = new URLSearchParams();
         formData.append('magnets[]', magnet);
 
         const uploadRes = await axios.post(uploadUrl, formData);
-        const magnetData = uploadRes.data?.data?.magnets?.[0];
+        const magnetData = uploadRes.data && uploadRes.data.data && uploadRes.data.data.magnets ? uploadRes.data.data.magnets[0] : null;
 
         if (!magnetData || !magnetData.id) return null;
 
         let linkDiretoOriginal = null;
 
-        if (magnetData.ready && magnetData.links?.length > 0) {
+        if (magnetData.ready && magnetData.links && magnetData.links.length > 0) {
             linkDiretoOriginal = magnetData.links[0].link;
         } else {
-            const statusUrl = `https://api.alldebrid.com/v4/magnet/status?agent=${AGENT_NAME}&apikey=${ALLDEBRID_API_KEY}&id=${magnetData.id}`;
+            const statusUrl = 'https://api.alldebrid.com/v4/magnet/status?agent=' + AGENT_NAME + '&apikey=' + ALLDEBRID_API_KEY + '&id=' + magnetData.id;
             const statusRes = await axios.get(statusUrl);
-            const statusData = statusRes.data?.data?.magnets;
+            const statusData = statusRes.data && statusRes.data.data ? statusRes.data.data.magnets : null;
 
-            if (statusData && statusData.status === 'Ready' && statusData.links?.length > 0) {
+            if (statusData && statusData.status === 'Ready' && statusData.links && statusData.links.length > 0) {
                 linkDiretoOriginal = statusData.links[0].link;
             }
         }
 
         if (!linkDiretoOriginal) return null;
 
-        const unlockUrl = `https://api.alldebrid.com/v4/link/unlock?agent=${AGENT_NAME}&apikey=${ALLDEBRID_API_KEY}&link=${encodeURIComponent(linkDiretoOriginal)}`;
+        const unlockUrl = 'https://api.alldebrid.com/v4/link/unlock?agent=' + AGENT_NAME + '&apikey=' + ALLDEBRID_API_KEY + '&link=' + encodeURIComponent(linkDiretoOriginal);
         const unlockRes = await axios.get(unlockUrl);
 
-        return unlockRes.data?.data?.link || null;
+        return (unlockRes.data && unlockRes.data.data && unlockRes.data.data.link) ? unlockRes.data.data.link : null;
     } catch (e) {
-        console.error('Falha ao resolver via AllDebrid:', e.response?.data || e.message);
+        console.error('Falha ao resolver via AllDebrid:', e.response && e.response.data ? e.response.data : e.message);
         return null;
     }
 }
@@ -152,8 +152,8 @@ builder.defineStreamHandler(async ({ type, id }) => {
         const streamUrl = await resolverComAllDebrid(fonte.magnet);
         if (streamUrl) {
             streams.push({
-                name: `AllDebrid [${fonte.qualidade}]`,
-                title: `🇧🇷 ${dadosMidia.titulo}\nÁudio: Dublado`,
+                name: 'AllDebrid [' + fonte.qualidade + ']',
+                title: '🇧🇷 ' + dadosMidia.titulo + '\nÁudio: Dublado',
                 url: streamUrl
             });
         }
@@ -164,4 +164,4 @@ builder.defineStreamHandler(async ({ type, id }) => {
 
 const port = process.env.PORT || 7000;
 serveHTTP(builder.getInterface(), { port: port });
-console.log(`Addon em execução na porta ${port}`);
+console.log('Addon em execução na porta ' + port);
