@@ -1,0 +1,13 @@
+{
+  "name": "meu-addon-alldebrid",
+  "version": "1.0.0",
+  "main": "addon.js",
+  "scripts": {
+    "start": "node addon.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "stremio-addon-sdk": "^1.6.10"
+  }
+}
